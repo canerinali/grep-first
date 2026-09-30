@@ -5,7 +5,7 @@
 **English** | [Türkçe](.github/readme/README.tr.md) | [简体中文](.github/readme/README.zh-CN.md) | [Español](.github/readme/README.es.md) | [Português (Brasil)](.github/readme/README.pt-BR.md)
 
 <!-- badges -->
-![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![Claude Code skill](https://img.shields.io/badge/Claude_Code-skill-orange) ![Codex skill](https://img.shields.io/badge/Codex-skill-black)
+[![CI](https://github.com/canerinali/grep-first/actions/workflows/ci.yml/badge.svg)](https://github.com/canerinali/grep-first/actions/workflows/ci.yml) [![GitHub stars](https://img.shields.io/github/stars/canerinali/grep-first?style=social)](https://github.com/canerinali/grep-first) ![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![Claude Code skill](https://img.shields.io/badge/Claude_Code-skill-orange) ![Codex skill](https://img.shields.io/badge/Codex-skill-black)
 
 - **Checks before it writes.** Each new external symbol is looked up in `node_modules`, `site-packages` or `--help`, for the version you have installed.
 - **Shows the receipt.** Every "it exists" comes with `file:line` plus the signature, for example `models.d.ts:1469 findOneAndUpdate(filter, update, options)`.
