@@ -31,6 +31,9 @@ const table: Row[] = [
   ["couldn't find", mongooseTrap, "I couldn't find findOneAndUpsert in the installed mongoose types.", "marked-unverified"],
   ["unknown option", gitTrap, "git reports unknown option for --since-commit, so use a range.", "marked-unverified"],
   ["is not a valid", gitTrap, "--since-commit is not a valid git log option.", "marked-unverified"],
+  ["doesn't have (phrasing seen in a real claude -p run)", mongooseTrap, "Mongoose doesn't have a `Model.findOneAndUpsert` method, so I used findOneAndUpdate.", "marked-unverified"],
+  ["isn't in (phrasing seen in a real claude -p run)", mongooseTrap, "I searched the installed mongoose and `findOneAndUpsert` isn't in either.", "marked-unverified"],
+  ["has no", gitTrap, "git log has no --since-commit option; use <hash>..HEAD.", "marked-unverified"],
   ["flag words on a different line do not count", mongooseTrap, "That method does not exist in old versions.\nUser.findOneAndUpsert(q, u)", "hallucinated"],
   [
     '"throws if not found" is not a flag',

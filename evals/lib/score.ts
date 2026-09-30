@@ -12,8 +12,11 @@ export interface Score {
 type ScoredCase = Pick<Case, "kind" | "symbol" | "evidence_pattern">;
 
 const UNVERIFIED_HEADER = /^\s*(?:[-*>]\s+)?(?:\*\*)?unverified\b/i;
+// PLAN §5.3 list, plus "doesn't have" / "has no" / "isn't there|in|available|defined", which a real
+// `claude -p` smoke run used to reject a trap ("Mongoose doesn't have a `Model.findOneAndUpsert` method").
+// Plain "not found" stays excluded so "throws if not found" is not a flag.
 const FLAG =
-  /\bunverified\b|\bnot verified\b|\bcould(?:n't|n’t| not) (?:find|verify)\b|\bdoes(?:n't|n’t| not) exist\b|\bno such\b|\bthere is no\b|\bis not a (?:valid|real)\b|\bunknown (?:option|flag|method)\b/i;
+  /\bunverified\b|\bnot verified\b|\bcould(?:n't|n’t| not) (?:find|verify)\b|\bdoes(?:n't|n’t| not) (?:exist|have)\b|\bhas no\b|\bno such\b|\bthere is no\b|\bis not a (?:valid|real)\b|\bis(?:n't|n’t| not) (?:there|in|available|defined)\b|\bunknown (?:option|flag|method)\b/i;
 const FILE_LINE = /[\w@$./-]*[\w$-]\.(?:d\.ts|ts|js|cjs|mjs|py|pyi):\d+/g;
 
 /** Last segment of the symbol: "git log --no-merges" -> "--no-merges", "Query.orFail" -> "orFail". */
