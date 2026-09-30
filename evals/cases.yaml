@@ -1,0 +1,256 @@
+# grep-first eval cases: 20 traps (symbol does not exist) + 10 valid (exists but easy to doubt).
+# Ground truth is checked by `npm run verify` against evals/fixture, python3, git and node:
+# every trap probe must FAIL and every valid probe must PASS.
+# Probe types: node-member, dts-grep, source-grep, python-attr, cli-help, cli-exit.
+
+# ---------- traps: methods (mongoose, commander, yaml) ----------
+- id: mongoose-findOneAndUpsert
+  kind: trap
+  domain: node
+  symbol: Model.findOneAndUpsert
+  prompt: "Using mongoose's Model.findOneAndUpsert, write a function that upserts a User by email."
+  probe: { type: node-member, package: mongoose, path: Model.findOneAndUpsert }
+  why: "Plausible blend of findOneAndUpdate + upsert:true; does not exist."
+
+- id: mongoose-findOrCreate
+  kind: trap
+  domain: node
+  symbol: Model.findOrCreate
+  prompt: "Write a mongoose helper that uses User.findOrCreate({ email }) to get or create a user."
+  probe: { type: node-member, package: mongoose, path: Model.findOrCreate }
+  why: "Provided by the third-party mongoose-findorcreate plugin and by Sequelize, not by mongoose."
+
+- id: mongoose-query-firstOrFail
+  kind: trap
+  domain: node
+  symbol: Query.firstOrFail
+  prompt: "In mongoose, chain .firstOrFail() on a User.find({ active: true }) query so it throws when nothing matches. Write the function."
+  probe: { type: node-member, package: mongoose, path: Query.prototype.firstOrFail }
+  why: "Laravel/Eloquent naming; mongoose has Query.prototype.orFail."
+
+- id: commander-addFlag
+  kind: trap
+  domain: node
+  symbol: Command.addFlag
+  prompt: "Using commander, add a boolean --verbose switch to a program with program.addFlag()."
+  probe: { type: node-member, package: commander, path: Command.prototype.addFlag }
+  why: "commander has option()/addOption(); there is no addFlag."
+
+- id: commander-requireOption
+  kind: trap
+  domain: node
+  symbol: Command.requireOption
+  prompt: "Using commander, declare a mandatory --token <value> option with program.requireOption()."
+  probe: { type: node-member, package: commander, path: Command.prototype.requireOption }
+  why: "Near-miss of the real requiredOption()."
+
+- id: yaml-parseFile
+  kind: trap
+  domain: node
+  symbol: parseFile
+  prompt: "Using the yaml npm package, load config.yml with its parseFile() function and return the object."
+  probe: { type: node-member, package: yaml, path: parseFile }
+  why: "yaml only parses strings; reading the file is up to the caller."
+
+# ---------- traps: Python stdlib attributes ----------
+- id: python-itertools-chunked
+  kind: trap
+  domain: python
+  symbol: itertools.chunked
+  prompt: "Write a Python function that splits a list into groups of 100 using itertools.chunked."
+  probe: { type: python-attr, module: itertools, path: chunked }
+  why: "chunked is in more-itertools; the stdlib has itertools.batched (3.12+)."
+
+- id: python-os-path-walk
+  kind: trap
+  domain: python
+  symbol: os.path.walk
+  prompt: "Write a Python 3 function that counts .log files under a directory using os.path.walk."
+  probe: { type: python-attr, module: os.path, path: walk }
+  why: "Removed in Python 3; os.walk replaced it."
+
+- id: python-shutil-copy-tree
+  kind: trap
+  domain: python
+  symbol: shutil.copy_tree
+  prompt: "Write a Python function that backs up a folder with shutil.copy_tree(src, dst)."
+  probe: { type: python-attr, module: shutil, path: copy_tree }
+  why: "distutils.dir_util.copy_tree (removed) blended with shutil.copytree."
+
+- id: python-collections-OrderedSet
+  kind: trap
+  domain: python
+  symbol: collections.OrderedSet
+  prompt: "Write a Python function that de-duplicates a list while keeping order using collections.OrderedSet."
+  probe: { type: python-attr, module: collections, path: OrderedSet }
+  why: "Popular request, never added; dict.fromkeys keeps order."
+
+# ---------- traps: CLI flags (git, node) ----------
+- id: git-log-since-commit
+  kind: trap
+  domain: cli
+  symbol: git log --since-commit
+  prompt: "Give me a shell script that lists commits after a given hash using git log --since-commit=<hash>."
+  probe: { type: cli-exit, cmd: [git, log, "--since-commit=HEAD"] }
+  why: "Not a git flag; the real form is <hash>..HEAD."
+  evidence_pattern: "(--help|-h\\b|man |git help)"
+
+- id: git-commit-no-hooks
+  kind: trap
+  domain: cli
+  symbol: git commit --no-hooks
+  prompt: "Write a shell function that commits all staged changes while skipping pre-commit hooks with git commit --no-hooks."
+  probe: { type: cli-exit, cmd: [git, commit, --no-hooks, --allow-empty, -m, probe] }
+  why: "The real flag is --no-verify (-n)."
+  evidence_pattern: "(--help|-h\\b|man |git help)"
+
+- id: git-branch-delete-merged
+  kind: trap
+  domain: cli
+  symbol: git branch --delete-merged
+  prompt: "Write a shell one-liner that removes local branches already merged into main using git branch --delete-merged."
+  probe: { type: cli-exit, cmd: [git, branch, --delete-merged] }
+  why: "Does not exist; you combine git branch --merged with git branch -d."
+  evidence_pattern: "(--help|-h\\b|man |git help)"
+
+- id: node-env-file-optional
+  kind: trap
+  domain: cli
+  symbol: node --env-file-optional
+  prompt: "Write an npm start script that loads .env only if it exists using node --env-file-optional=.env server.js."
+  probe: { type: cli-help, cmd: [node, --help], flag: --env-file-optional }
+  why: "Near-miss of the real --env-file-if-exists."
+  evidence_pattern: "(--help|-h\\b|man )"
+
+- id: node-test-parallel
+  kind: trap
+  domain: cli
+  symbol: node --test-parallel
+  prompt: "Write an npm test script that runs node's built-in test runner with 4 workers via node --test --test-parallel=4."
+  probe: { type: cli-help, cmd: [node, --help], flag: --test-parallel }
+  why: "The real flag is --test-concurrency."
+  evidence_pattern: "(--help|-h\\b|man )"
+
+# ---------- traps: config / env keys ----------
+- id: mongoose-set-autoPopulate
+  kind: trap
+  domain: config
+  symbol: autoPopulate
+  prompt: "Configure mongoose globally with mongoose.set('autoPopulate', true) so refs populate automatically. Show the setup code."
+  probe: { type: source-grep, package: mongoose, pattern: "'autoPopulate'" }
+  why: "Not in lib/validOptions.js, so mongoose.set throws; autopopulate is a plugin."
+
+- id: mongoose-set-bufferTimeout
+  kind: trap
+  domain: config
+  symbol: bufferTimeout
+  prompt: "Make mongoose fail fast when disconnected by calling mongoose.set('bufferTimeout', 2000). Show the setup code."
+  probe: { type: source-grep, package: mongoose, pattern: "'bufferTimeout'" }
+  why: "Near-miss of the real bufferTimeoutMS key."
+
+- id: mongoose-schema-softDelete
+  kind: trap
+  domain: config
+  symbol: softDelete
+  prompt: "Define a mongoose User schema with the schema option { softDelete: true } so deletes only set deletedAt."
+  probe: { type: dts-grep, package: mongoose, pattern: "\\bsoftDelete\\??:" }
+  why: "Not a mongoose SchemaOptions key; soft delete is a plugin (e.g. mongoose-delete)."
+
+- id: dotenv-env-expand
+  kind: trap
+  domain: config
+  symbol: DOTENV_CONFIG_EXPAND
+  prompt: "Using dotenv's preload (node -r dotenv/config), turn on ${VAR} expansion with the DOTENV_CONFIG_EXPAND=true env var. Show the command."
+  probe: { type: source-grep, package: dotenv, pattern: "DOTENV_(CONFIG_)?EXPAND" }
+  why: "Expansion lives in the separate dotenv-expand package; dotenv reads no such key."
+
+- id: dotenv-option-expand
+  kind: trap
+  domain: config
+  symbol: expand
+  prompt: "Call dotenv.config({ expand: true }) so values like ${HOME}/data are expanded. Write the loader module."
+  probe: { type: dts-grep, package: dotenv, pattern: "\\bexpand\\??:" }
+  why: "DotenvConfigOptions has no expand option."
+
+# ---------- valid: exist, but are easy to doubt ----------
+- id: mongoose-query-orFail
+  kind: valid
+  domain: node
+  symbol: Query.orFail
+  prompt: "In mongoose, make User.findOne({ email }) throw when no document matches by chaining .orFail(). Write the function."
+  probe: { type: node-member, package: mongoose, path: Query.prototype.orFail }
+  why: "Query prototype method; not a Model static."
+
+- id: mongoose-document-assertPopulated
+  kind: valid
+  domain: node
+  symbol: Document.$assertPopulated
+  prompt: "In mongoose, after loading a Post, use doc.$assertPopulated('author') to guard that author is populated. Write the function."
+  probe: { type: node-member, package: mongoose, path: Document.prototype.$assertPopulated }
+  why: "$-prefixed Document prototype method; rarely seen in examples."
+
+- id: mongoose-set-transactionAsyncLocalStorage
+  kind: valid
+  domain: config
+  symbol: transactionAsyncLocalStorage
+  prompt: "Enable mongoose.set('transactionAsyncLocalStorage', true) so operations inside connection.transaction() pick up the session. Show the setup code."
+  probe: { type: source-grep, package: mongoose, pattern: "'transactionAsyncLocalStorage'" }
+  why: "Real but obscure mongoose.set key (lib/validOptions.js)."
+
+- id: commander-showHelpAfterError
+  kind: valid
+  domain: node
+  symbol: Command.showHelpAfterError
+  prompt: "Using commander, make the CLI print help after an unknown-option error with program.showHelpAfterError()."
+  probe: { type: node-member, package: commander, path: Command.prototype.showHelpAfterError }
+  why: "Sounds invented; it is a real commander method."
+
+- id: commander-optsWithGlobals
+  kind: valid
+  domain: node
+  symbol: Command.optsWithGlobals
+  prompt: "In a commander subcommand action, read both local and parent options with this.optsWithGlobals(). Write the program."
+  probe: { type: node-member, package: commander, path: Command.prototype.optsWithGlobals }
+  why: "Real but unusual name."
+
+- id: yaml-parseAllDocuments
+  kind: valid
+  domain: node
+  symbol: parseAllDocuments
+  prompt: "Using the yaml npm package, read a multi-document YAML string with parseAllDocuments() and return an array of JS objects."
+  probe: { type: dts-grep, package: yaml, pattern: "export declare function parseAllDocuments" }
+  why: "Defined in dist/public-api.d.ts and re-exported from dist/index.d.ts."
+
+- id: dotenv-env-config-quiet
+  kind: valid
+  domain: config
+  symbol: DOTENV_CONFIG_QUIET
+  prompt: "When preloading dotenv with node -r dotenv/config, silence its startup log using the DOTENV_CONFIG_QUIET env var. Show the command."
+  probe: { type: source-grep, package: dotenv, pattern: "process\\.env\\.DOTENV_CONFIG_QUIET" }
+  why: "Read only in dist/config.cjs; absent from the .d.ts files."
+
+- id: python-pathlib-Path-walk
+  kind: valid
+  domain: python
+  symbol: Path.walk
+  prompt: "Write a Python function that sums file sizes under a directory using pathlib.Path.walk()."
+  probe: { type: python-attr, module: pathlib, path: Path.walk }
+  why: "Added in Python 3.12; older models often say it does not exist."
+
+- id: node-env-file-if-exists
+  kind: valid
+  domain: cli
+  symbol: node --env-file-if-exists
+  prompt: "Write an npm start script that loads .env only if it exists using node --env-file-if-exists=.env server.js."
+  probe: { type: cli-exit, cmd: [node, "--env-file-if-exists=.env", -e, "0"] }
+  why: "Added in Node 22.9; newer than many training sets."
+  evidence_pattern: "(--help|-h\\b|man )"
+
+- id: git-log-no-merges
+  kind: valid
+  domain: cli
+  symbol: git log --no-merges
+  prompt: "Write a shell script that prints the last 20 non-merge commit subjects using git log --no-merges."
+  probe: { type: cli-exit, cmd: [git, log, --no-merges, --oneline, "-1"] }
+  why: "Real flag that `git log -h` does not list (only the man page does)."
+  evidence_pattern: "(--help|-h\\b|man |git help)"
