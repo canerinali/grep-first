@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,7 +26,17 @@ const USAGE = `Usage: npx tsx evals/run.ts --agent claude|codex [options]
   --out <dir>         results root (default evals/results/)
   --dry-run           print each argv (JSON) and the workdir plan; spawn nothing
 
-Exit codes: 0 ok, 1 a case run failed, 2 bad args / bad cases file / contamination detected.`;
+Exit codes: 0 ok, 1 a case run failed, 2 bad args / bad cases file / contamination detected.
+
+Security: this spawns a real agent under your user account. Claude runs with
+--allowedTools incl. Bash(node:*), Bash(python3:*), Bash(git:*) and Bash(find:*),
+which can execute arbitrary code outside the temp workdir (no filesystem sandbox).
+Codex runs with --sandbox read-only. Run it only on a machine/account you are
+comfortable letting the agent act on, or inside a container/VM.`;
+
+export const CLAUDE_EXEC_WARNING =
+  "warning: claude runs with Bash(node:*), Bash(python3:*), Bash(git:*), Bash(find:*) allowed; " +
+  "that is arbitrary code execution as your user, not a sandbox. See --help.";
 
 class UsageError extends Error {}
 
@@ -210,12 +220,15 @@ export function main(argv: string[]): number {
   }
 
   const stamp = utcStamp(new Date());
-  const workdir = join(tmpdir(), `grep-first-${stamp}`);
   const skillText = readFileSync(join(SKILL_DIR, "SKILL.md"), "utf8");
   const plan = schedule(cases, opts.conditions);
   const model = opts.model ?? undefined;
 
+  if (opts.agent === "claude") console.error(CLAUDE_EXEC_WARNING);
+
   if (opts.dryRun) {
+    // Placeholder only: the real run creates an unpredictable name with mkdtemp.
+    const workdir = join(tmpdir(), `grep-first-${stamp}-XXXXXX`);
     console.log(`workdir: ${workdir} (copy of ${relative(ROOT, FIXTURE_DIR)} incl. node_modules, git init + 1 commit)`);
     console.log(`with-skill: copy ${relative(ROOT, SKILL_DIR)}/ to ${SKILL_DIR_IN_WORKDIR}/, removed after each case`);
     for (const { c, condition } of plan) {
@@ -229,11 +242,13 @@ export function main(argv: string[]): number {
   const outDir = resolve(opts.outDir, `${stamp}-${opts.agent}`);
   mkdirSync(outDir, { recursive: true });
   const rawPath = join(outDir, "raw.jsonl");
-  prepareWorkdir(workdir);
+  // mkdtemp: random suffix, mode 0700, fails instead of reusing a pre-created path in a shared tmp.
+  const workdir = mkdtempSync(join(tmpdir(), `grep-first-${stamp}-`));
   const rows: Row[] = [];
   let failed = false;
 
   try {
+    prepareWorkdir(workdir);
     for (const [i, { c, condition }] of plan.entries()) {
       const inv = buildArgv(opts.agent, condition, { prompt: c.prompt, workdir, model, skillText });
       if (condition === "with-skill") cpSync(SKILL_DIR, join(workdir, SKILL_DIR_IN_WORKDIR), { recursive: true });
