@@ -1,0 +1,8 @@
+{"type":"_synthetic","note":"hand-written for tests; event shape copied from a local codex exec --json smoke run"}
+{"type":"thread.started","thread_id":"00000000-0000-0000-0000-000000000000"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"reasoning","text":"Checking mongoose types."}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"grep -rn findOneAndUpsert node_modules/mongoose/types","aggregated_output":"","exit_code":1,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"Draft answer."}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"Unverified: Model.findOneAndUpsert. Use findOneAndUpdate(filter, update, { upsert: true })."}}
+{"type":"turn.completed","usage":{"input_tokens":14296,"cached_input_tokens":12160,"cache_write_input_tokens":0,"output_tokens":6,"reasoning_output_tokens":0}}
