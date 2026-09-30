@@ -1,0 +1,38 @@
+{
+  "name": "grep-first",
+  "version": "0.1.0",
+  "description": "A SKILL.md that makes coding agents find an external symbol in locally installed source before using it, or say \"Unverified\".",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint:skill": "tsx scripts/lint-skill.ts",
+    "links": "tsx scripts/check-links.ts",
+    "verify": "tsx evals/verify-cases.ts",
+    "eval": "tsx evals/run.ts"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "skill",
+    "hallucination",
+    "ai-agents"
+  ],
+  "author": "canerinali",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/canerinali/grep-first.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3",
+    "yaml": "2.9.1"
+  }
+}

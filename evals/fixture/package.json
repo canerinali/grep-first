@@ -1,0 +1,13 @@
+{
+  "name": "grep-first-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Subject project for grep-first evals. Agents run in a temporary copy of this directory.",
+  "type": "module",
+  "devDependencies": {
+    "commander": "15.0.0",
+    "dotenv": "18.0.5",
+    "mongoose": "9.10.3",
+    "yaml": "2.9.1"
+  }
+}
